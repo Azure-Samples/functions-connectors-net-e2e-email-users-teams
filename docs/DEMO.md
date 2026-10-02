@@ -171,7 +171,7 @@ Run `azd env get-values` to grab the live names if you need them.
 3. **Trigger configurations** → `cnsc-<token>-trigger`:
    - **Operation:** `OnNewEmailV3`
    - **Parameters:** `folderPath = Inbox` (note: no `importance` filter — we evaluate every mail in code via the classifier so we can use richer signals).
-   - **Notification details / callback URL:** `https://func-<token>.azurewebsites.net/runtime/webhooks/connector?functionName=OnNewImportantEmailReceived&code=<system key>`. This URL was assembled by [infra/scripts/postdeploy.sh](../infra/scripts/postdeploy.sh) using the system key from step A.5.
+   - **Notification details / callback URL:** `https://func-<token>.azurewebsites.net/runtime/webhooks/connector?functionName=OnNewImportantEmailReceived`. The system key from step A.5 is stored separately in `notificationDetails.authentication` with `type: "QueryString"`, `name: "code"`, and the key as `value`, configured by [infra/scripts/postdeploy.sh](../infra/scripts/postdeploy.sh).
 
 ### C) Tour of Application Insights
 

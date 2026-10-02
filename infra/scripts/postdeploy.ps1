@@ -79,7 +79,7 @@ if (-not $connectorExtensionKey) {
 }
 
 $triggerName = "$connectorNamespaceConnectionName-trigger"
-$callbackUrl = "https://$functionAppName.azurewebsites.net/runtime/webhooks/connector?functionName=$office365FunctionName&code=$connectorExtensionKey"
+$callbackUrl = "https://$functionAppName.azurewebsites.net/runtime/webhooks/connector?functionName=$office365FunctionName"
 
 # The connector-namespace extension's --notification-details parser
 # expects `body` to be a dict (not the Logic Apps template string
@@ -97,7 +97,15 @@ $callbackUrl = "https://$functionAppName.azurewebsites.net/runtime/webhooks/conn
 $connDetailsFile  = New-TemporaryFile
 @{ connectorName = "office365"; connectionName = $connectorNamespaceConnectionName } | ConvertTo-Json -Compress | Set-Content -Path $connDetailsFile -Encoding utf8
 $notifDetailsFile = New-TemporaryFile
-@{ callbackUrl = $callbackUrl; httpMethod = "Post" } | ConvertTo-Json -Compress | Set-Content -Path $notifDetailsFile -Encoding utf8
+@{
+    callbackUrl = $callbackUrl
+    httpMethod = "Post"
+    authentication = @{
+        type = "QueryString"
+        name = "code"
+        value = $connectorExtensionKey
+    }
+} | ConvertTo-Json -Depth 3 -Compress | Set-Content -Path $notifDetailsFile -Encoding utf8
 $parameters = '[{"name":"folderPath","value":"Inbox"}]'
 
 Write-Host "  Trigger name: $triggerName" -ForegroundColor Cyan
@@ -119,7 +127,8 @@ az connector-namespace trigger create `
     --parameters $parameters `
     --notification-details "@$notifDetailsFile" `
     --state "Enabled" `
-    --description "When a new email arrives in the consented Office 365 mailbox, POST the payload to the function's connector webhook."
+    --description "When a new email arrives in the consented Office 365 mailbox, POST the payload to the function's connector webhook." `
+    -o none
 
 Remove-Item $connDetailsFile, $notifDetailsFile -ErrorAction SilentlyContinue
 

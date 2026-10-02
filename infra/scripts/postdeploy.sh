@@ -88,7 +88,7 @@ if [[ -z "${connectorExtensionKey}" ]]; then
 fi
 
 triggerName="${connectorNamespaceConnectionName}-trigger"
-callbackUrl="https://${functionAppName}.azurewebsites.net/runtime/webhooks/connector?functionName=${office365FunctionName}&code=${connectorExtensionKey}"
+callbackUrl="https://${functionAppName}.azurewebsites.net/runtime/webhooks/connector?functionName=${office365FunctionName}"
 
 connectionDetails=$(jq -nc --arg conn "${connectorNamespaceConnectionName}" \
     '{connectorName:"office365", connectionName:$conn}')
@@ -103,7 +103,7 @@ parameters=$(jq -nc '[{name:"folderPath", value:"Inbox"}]')
 # `@file` syntax. Passing them inline as JSON strings makes the CLI's
 # shorthand parser try to interpret the leading `{` as the shorthand
 # `key=value` syntax, which fails on colons inside URLs.
-notificationDetails=$(jq -nc --arg url "${callbackUrl}" '{callbackUrl:$url, httpMethod:"Post"}')
+notificationDetails=$(jq -nc --arg url "${callbackUrl}" --arg key "${connectorExtensionKey}" '{callbackUrl:$url, httpMethod:"Post", authentication:{type:"QueryString", name:"code", value:$key}}')
 connDetailsFile=$(mktemp)
 notifDetailsFile=$(mktemp)
 echo "${connectionDetails}"   > "${connDetailsFile}"
@@ -129,7 +129,8 @@ az connector-namespace trigger create \
     --parameters "${parameters}" \
     --notification-details "@${notifDetailsFile}" \
     --state "Enabled" \
-    --description "When a new email arrives in the consented Office 365 mailbox, POST the payload to the function's connector webhook."
+    --description "When a new email arrives in the consented Office 365 mailbox, POST the payload to the function's connector webhook." \
+    -o none
 
 echo -e "${GREEN}✅ Connector Namespace trigger config created successfully!${NC}"
 
